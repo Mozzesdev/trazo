@@ -5,6 +5,8 @@ import type { CanvasObject } from "@/types";
 interface CanvasObjectProps {
   object: CanvasObject;
   isSelected: boolean;
+  onDblClick: (id: string) => void;
+  isVisible: boolean;
   onClick: (id: string) => void;
   onTransformEnd: (event: Konva.KonvaEventObject<Event>) => void;
 }
@@ -12,7 +14,9 @@ interface CanvasObjectProps {
 export function CanvasObjectRenderer({
   object,
   isSelected,
+  isVisible,
   onClick,
+  onDblClick,
   onTransformEnd,
 }: CanvasObjectProps) {
   const commonProps = {
@@ -21,7 +25,9 @@ export function CanvasObjectRenderer({
     y: object.y,
     opacity: object.opacity,
     draggable: isSelected,
+    visible: isVisible,
     onClick: () => onClick(object.id),
+    onDblClick: () => onDblClick(object.id),
     onTap: () => onClick(object.id),
     onTransformEnd: onTransformEnd,
   };
@@ -30,16 +36,14 @@ export function CanvasObjectRenderer({
     case "line":
       return (
         <Line
-          id={object.id}
+          {...commonProps}
           points={object.points}
           stroke={object.color}
           strokeWidth={object.strokeWidth}
-          opacity={object.opacity}
           tension={0.5}
           lineCap="round"
           lineJoin="round"
-          onClick={() => onClick(object.id)}
-          onTap={() => onClick(object.id)}
+          globalCompositeOperation={object.globalCompositeOperation}
         />
       );
     case "rect":
@@ -59,9 +63,12 @@ export function CanvasObjectRenderer({
           {...commonProps}
           text={object.text}
           fontSize={object.fontSize}
-          fontFamily="sans-serif"
+          fontFamily={object.fontFamily}
           fill={object.color}
           fontWeight={object.fontWeight}
+          width={object.width}
+          height={object.height}
+          verticalAlign="middle"
         />
       );
     default:

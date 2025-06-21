@@ -64,6 +64,7 @@ export interface TextObject extends BaseObject {
   fontSize: number;
   fontFamily: string;
   fontWeight: string;
+  interactionMode?: "IDLE" | "DRAGGING" | "RESIZING" | "EDITING";
 }
 
 // Unión discriminada para todos los objetos posibles en el canvas

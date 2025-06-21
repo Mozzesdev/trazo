@@ -1,51 +1,89 @@
-import { useState } from "react";
-import { FloatingToolbar, type ToolType } from "./components/floating-bar";
+import { useState, useCallback } from "react";
+import {
+  FloatingToolbar,
+  type ToolType,
+  type ToolOptions,
+} from "./components/floating-bar";
 import { PresenceIndicator } from "./components/presence-indicator";
 import { ShareButton } from "./components/share-button";
 import { Canvas } from "./components/canvas";
+import type { CanvasObject } from "./types";
 
-export type LineType = {
-  points: number[];
-  tool: "pencil" | "eraser";
+// Opciones por defecto para nuestras herramientas
+const DEFAULT_TOOL_OPTIONS: ToolOptions = {
+  pencil: {
+    color: "#000000",
+    strokeWidth: 5,
+    opacity: 100, // Usamos una escala de 0-100 para la UI
+  },
+  eraser: {
+    size: 20,
+    mode: "pixel",
+  },
+  text: {
+    fontSize: 16,
+    color: "#000000",
+    fontWeight: "normal",
+  },
 };
 
 export default function WhiteboardApp() {
   const [activeTool, setActiveTool] = useState<ToolType>("cursor");
-  const [history, setHistory] = useState<LineType[][]>([[]]); // Inicia con un canvas vacío
+  const [history, setHistory] = useState<CanvasObject[][]>([[]]);
   const [currentStep, setCurrentStep] = useState(0);
+  // 1. Añadimos un estado para gestionar las opciones de las herramientas
+  const [toolOptions, setToolOptions] =
+    useState<ToolOptions>(DEFAULT_TOOL_OPTIONS);
 
-  // 3. Creamos las funciones para manejar el historial
   const handleUndo = () => {
-    // Solo podemos deshacer si no estamos en el primer estado
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
   };
 
-  const onClear = () => {};
+  const onClear = () => {
+    setHistory([[]]);
+    setCurrentStep(0);
+  };
 
   const handleRedo = () => {
-    // Solo podemos rehacer si no estamos en el último estado del historial
     if (currentStep < history.length - 1) {
       setCurrentStep(currentStep + 1);
     }
   };
 
-  // 4. Esta función será llamada por el Canvas cuando se complete un dibujo
-  const handleDrawComplete = (newLines: LineType[]) => {
-    // Cuando el usuario dibuja algo nuevo, eliminamos el historial "futuro" (lo que se había deshecho)
+  const addObject = useCallback(
+    (newObject: CanvasObject) => {
+      const currentObjects = history[currentStep] || [];
+      const newObjects = [...currentObjects, newObject];
+      const newHistory = history.slice(0, currentStep + 1);
+      setHistory([...newHistory, newObjects]);
+      setCurrentStep(newHistory.length);
+    },
+    [currentStep, history]
+  );
+
+  const updateObject = (updatedObject: CanvasObject) => {
+    const currentObjects = history[currentStep] || [];
+    const objectIndex = currentObjects.findIndex(
+      (obj) => obj.id === updatedObject.id
+    );
+    if (objectIndex === -1) return;
+
+    const newObjects = [...currentObjects];
+    newObjects[objectIndex] = updatedObject;
+
     const newHistory = history.slice(0, currentStep + 1);
-    setHistory([...newHistory, newLines]);
+    setHistory([...newHistory, newObjects]);
     setCurrentStep(newHistory.length);
   };
 
   const canUndo = currentStep > 0;
   const canRedo = currentStep < history.length - 1;
-  const currentLines = history[currentStep];
+  const objects = history[currentStep] || [];
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
-      {/* Canvas with dot grid background */}
       <div
         className="absolute inset-0 opacity-30 dark:opacity-20"
         style={{
@@ -54,14 +92,14 @@ export default function WhiteboardApp() {
         }}
       />
 
-      {/* Main canvas area */}
       <Canvas
-        lines={currentLines}
-        onDrawComplete={handleDrawComplete}
+        objects={objects}
         activeTool={activeTool}
+        onAddObject={addObject}
+        onUpdateObject={updateObject}
+        toolOptions={toolOptions}
       />
 
-      {/* Floating UI Components */}
       <FloatingToolbar
         onClear={onClear}
         activeTool={activeTool}
@@ -70,6 +108,8 @@ export default function WhiteboardApp() {
         onRedo={handleRedo}
         canUndo={canUndo}
         canRedo={canRedo}
+        toolOptions={toolOptions}
+        onToolOptionsChange={setToolOptions}
       />
       <PresenceIndicator />
       <ShareButton />
