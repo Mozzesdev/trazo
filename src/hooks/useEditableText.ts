@@ -209,7 +209,13 @@ export function useEditableText(
         });
       }
     }
-  }, [state.text, state.fontSize, state.width, state.height, state.interactionMode]);
+  }, [
+    state.text,
+    state.fontSize,
+    state.width,
+    state.height,
+    state.interactionMode,
+  ]);
 
   useLayoutEffect(() => {
     if (state.interactionMode !== "RESIZING") {

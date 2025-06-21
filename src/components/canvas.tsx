@@ -142,7 +142,6 @@ export function Canvas({
     } else {
       onAddObject(finalTextObject);
     }
-    setEditingText(null);
   };
 
   const handleTextUpdate = (updatedText: TextObject) => {
